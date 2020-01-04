@@ -9,6 +9,7 @@ public class MissileController : MonoBehaviour
     float destructionTime = 0.5f;
     bool leftField = false;
     float destructionTimert = 0;
+    public float explosionStrength = 1000;
     // Start is called before the first frame update
     void Start()
     {

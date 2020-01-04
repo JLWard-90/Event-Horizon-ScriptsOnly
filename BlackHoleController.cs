@@ -63,7 +63,7 @@ public class BlackHoleController : MonoBehaviour
 
     void RotateBH()
     {
-        float zAngle = rotSpeed * Time.deltaTime;
+        float zAngle = -rotSpeed * Time.deltaTime;
         this.transform.Rotate(0, 0, zAngle, Space.World);
     }
 

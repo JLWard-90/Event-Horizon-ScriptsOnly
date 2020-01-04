@@ -25,9 +25,38 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     GameObject shieldObject;
 
+    Rigidbody2D playerRigidBody;
+    //The following parameters all refer to the constant forward burn mode:
+    [SerializeField]
+    float autoThrustFuelBurnRate;
+    [SerializeField]
+    bool constantForwardBurn;
+    [SerializeField]
+    float constantForwardBurnStrength;
+    [SerializeField]
+    float maxForwardSpeed;
+    float initPlayerPosition;
+    float playerPosition;
+    float playerSpeed;
+    [SerializeField]
+    float smoothTime;
+    float thrustTimer = 0;
+    //End of constant forward burn mode parameters
+    //The following parameters are to enable the player to use different ship types:
+    public int currentPlayerShip = 0; //The index of the ship model
+    [SerializeField]
+    public GameObject[] shipModelArray;
     // Start is called before the first frame update
+
     void Start()
     {
+        if (PlayerPrefs.HasKey("currentShipIndex"))
+        {
+            currentPlayerShip = PlayerPrefs.GetInt("currentShipIndex");
+        }
+        GameObject shipModel = GameObject.Instantiate(shipModelArray[currentPlayerShip]);
+        shipModel.transform.SetParent(transform);
+        shipModel.transform.position = new Vector3(-7, 0, 0);
         animator = GetComponentInChildren<Animator>();
         if (!shieldOn)
         {
@@ -37,33 +66,68 @@ public class PlayerController : MonoBehaviour
         levelController = GameObject.Find("LevelController").GetComponent<LevelController>();
         Debug.Log(levelController);
         fuel = levelController.startingFuel;
+        
+        
+        //Getting initial position info:
+        initPlayerPosition = transform.position.x;
+        playerPosition = initPlayerPosition;
+        
+        //Making sure initial speed is set to 0:
+        playerSpeed = 0;
+        //Grabbing the Rigidbody2D component
+        playerRigidBody = this.gameObject.GetComponent<Rigidbody2D>();
+        //Checking that we have the animator:
+        if (animator == null)
+        {
+            animator = GameObject.Find("thrustAnimation").GetComponent<Animator>();
+        }
+        if (constantForwardBurn)
+        {
+            Debug.Log("Turning animation on");
+            animator.SetBool("UnderThrust", true);
+        }
+        else
+        {
+            Debug.Log("Animation not on");
+        }
+
+        //Update the fuel counter:
         uI.OnUpdateFuelText(fuel);
+        Debug.Log("Completed ship startup");
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (animator==null)
+        if (playerRigidBody == null)
         {
-            animator = GetComponentInChildren<Animator>();
+            playerRigidBody = this.gameObject.GetComponent<Rigidbody2D>();
         }
+    }
+
+    private void FixedUpdate()
+    {
         bool leftMouse = Input.GetMouseButton(0);
         if (leftMouse)
         {
             Debug.Log("Pressed button 0");
             //TurnToFacePosition();
-            if(fuel > 0 && !gameOver)
+            if (fuel > 0 && !gameOver)
             {
                 AddThrustMouse();
             }
-            else
+            else if (!constantForwardBurn)
             {
-                animator.SetBool("UnderThrust",false);
+                animator.SetBool("UnderThrust", false);
             }
         }
         else
         {
             keyThrust();
+        }
+        if (constantForwardBurn)
+        {
+            Autothrust();
         }
     }
 
@@ -87,6 +151,12 @@ public class PlayerController : MonoBehaviour
             if (shieldOn)
             {
                 GameObject boom = GameObject.Instantiate(explosionPrefab);
+                //Direction in which the missile explosion will push the player:
+                Vector3 targetDir = new Vector3(-1, 0, 0); //The explosion wil push the player backwards
+                //Get the strength of the explosion from the missile object:
+                float explosionStrength = other.gameObject.GetComponent<MissileController>().explosionStrength;
+                //Apply a force of strength explosionStrength to the player object
+                GetComponent<Rigidbody2D>().AddForce(targetDir * explosionStrength);
                 boom.transform.localScale = new Vector3(4,4,4);
                 boom.transform.position = transform.position;
                 GameObject.Destroy(other.gameObject);
@@ -158,11 +228,27 @@ public class PlayerController : MonoBehaviour
 
     void AddThrustMouse()
     {
-        fuel -= fuelBurnRate * Time.deltaTime;
         //uI.OnUpdateFuelText(fuel);
         Vector3 targetDir = MousePos() - transform.position;
-        targetDir = targetDir / Vector3.Magnitude(targetDir);
-        GetComponent<Rigidbody2D>().AddForce(targetDir * strength);
+        if (constantForwardBurn)
+        {
+            targetDir.x = 0;
+            if (targetDir.y == 0)
+            {
+                //Do nothing so no thrust is added to the rigidBody.
+            }
+            else
+            {
+                targetDir = targetDir / Vector3.Magnitude(targetDir); //else normalise as normal
+                fuel -= fuelBurnRate * Time.deltaTime;
+            }
+        }
+        else
+        {
+            targetDir = targetDir / Vector3.Magnitude(targetDir);
+            fuel -= fuelBurnRate * Time.fixedDeltaTime;
+        }
+        playerRigidBody.AddForce(targetDir * strength * Time.fixedDeltaTime);
         animator.SetBool("UnderThrust",true);
     }
 
@@ -170,17 +256,53 @@ public class PlayerController : MonoBehaviour
     {
         float hAxis = Input.GetAxis("Horizontal");
         float vAxis = Input.GetAxis("Vertical");
-        if (hAxis != 0 && fuel > 0 || vAxis != 0 && fuel > 0)
+        if ((hAxis != 0 && fuel > 0 && !constantForwardBurn) || (vAxis != 0 && fuel > 0))
         {
-            fuel -= fuelBurnRate * Time.deltaTime;
+            fuel -= fuelBurnRate * Time.fixedDeltaTime;
             Vector3 targetDir = new Vector3(hAxis,vAxis,0);
+            
             targetDir = targetDir / Vector3.Magnitude(targetDir);
-            GetComponent<Rigidbody2D>().AddForce(targetDir * strength);
+            
+            playerRigidBody.AddForce(targetDir * strength * Time.fixedDeltaTime);
             animator.SetBool("UnderThrust",true);
+        }
+        else if (!constantForwardBurn)
+        {
+            animator.SetBool("UnderThrust",false);
+        }
+    }
+
+    public void Autothrust()
+    {
+        if (thrustTimer > smoothTime && smoothTime != 0)
+        {
+            playerSpeed = (transform.position.x - initPlayerPosition - playerPosition) / smoothTime;
+            playerPosition = (transform.position.x - initPlayerPosition);
+            if (fuel > 0 && playerSpeed < maxForwardSpeed)
+            {
+                Vector3 targetDir = new Vector3(0, 0, 0);
+                targetDir.x = 1;
+                playerRigidBody.AddForce(targetDir * constantForwardBurnStrength * smoothTime);
+                fuel -= autoThrustFuelBurnRate;
+                animator.SetBool("UnderThrust", true);
+            }
+            thrustTimer = 0;
+        }
+        else if (smoothTime != 0)
+        {
+            thrustTimer += Time.fixedDeltaTime;
         }
         else
         {
-            animator.SetBool("UnderThrust",false);
+            playerSpeed = (transform.position.x - initPlayerPosition - playerPosition) / Time.fixedDeltaTime;
+            playerPosition = (transform.position.x - initPlayerPosition);
+            if (fuel > 0 && playerSpeed < maxForwardSpeed)
+            {
+                Vector3 targetDir = new Vector3(0, 0, 0);
+                targetDir.x = 1;
+                playerRigidBody.AddForce(targetDir * constantForwardBurnStrength * Time.fixedDeltaTime);
+                fuel -= autoThrustFuelBurnRate * Time.fixedDeltaTime;
+            }
         }
     }
 }

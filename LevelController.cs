@@ -19,6 +19,10 @@ public class LevelController : MonoBehaviour
 
     private void Start() 
     {
+        if(player == null)
+        {
+            player = GameObject.Find("Player").GetComponent<PlayerController>();
+        }
         player.gameOver = false;
         gameController.GetRequiredComponents();
         gameController.AddLevelToList(SceneName);
@@ -32,18 +36,31 @@ public class LevelController : MonoBehaviour
 
     public void playAreaLeft()
     {
-        gameController.OnGameOver();
+        if (gameOver == false)
+        {
+            gameOver = true;
+            gameController.OnGameOver();
+        }
+        
     }
 
     public void EnteredBlackHole()
     {
-        gameOver = true;
-        gameController.OnGameOver();
+        if (!gameOver)
+        {
+            gameOver = true;
+            gameController.OnGameOver();
+        }
+        
     }
     public void DestroyedByMissile()
     {
-        gameOver = true;
-        gameController.OnGameOver();
+        if(!gameOver)
+        {
+            gameOver = true;
+            gameController.OnGameOver();
+        }
+        
     }
 }
 

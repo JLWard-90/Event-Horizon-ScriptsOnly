@@ -7,7 +7,7 @@ public class DamagedShipController : MonoBehaviour
     [SerializeField]
     GameObject explosionPrefab;
     float TimePassed = 0;
-    float TimeofDeath = 2.5f;
+    float TimeofDeath = 1.5f;
     GameObject playerObj;
     // Start is called before the first frame update
     void Start()
@@ -26,7 +26,7 @@ public class DamagedShipController : MonoBehaviour
         TimePassed += Time.deltaTime;
         if (TimePassed > TimeofDeath)
         {
-            Vector3 targetVector = new Vector3(200,0,0);
+            Vector3 targetVector = new Vector3(400,0,0);
             playerObj.GetComponent<Rigidbody2D>().AddForce(targetVector);
             GameObject bigExplosion = GameObject.Instantiate(explosionPrefab, transform.position, transform.rotation);
             bigExplosion.transform.localScale = new Vector3(7,7,7);
