@@ -9,10 +9,12 @@ public class DamagedShipController : MonoBehaviour
     float TimePassed = 0;
     float TimeofDeath = 1.5f;
     GameObject playerObj;
+    sfxManager soundEffects;
     // Start is called before the first frame update
     void Start()
     {
         playerObj = GameObject.Find("Player");
+        soundEffects = GameObject.Find("GameController").GetComponent<sfxManager>();
     }
 
     // Update is called once per frame
@@ -30,6 +32,7 @@ public class DamagedShipController : MonoBehaviour
             playerObj.GetComponent<Rigidbody2D>().AddForce(targetVector);
             GameObject bigExplosion = GameObject.Instantiate(explosionPrefab, transform.position, transform.rotation);
             bigExplosion.transform.localScale = new Vector3(7,7,7);
+            soundEffects.PlayExplosion1();
             GameObject.Destroy(this.gameObject);
         }
     }

@@ -46,6 +46,10 @@ public class PlayerController : MonoBehaviour
     public int currentPlayerShip = 0; //The index of the ship model
     [SerializeField]
     public GameObject[] shipModelArray;
+
+    //Get the sound effects manager:
+    sfxManager soundEffects;
+
     // Start is called before the first frame update
 
     void Start()
@@ -90,7 +94,7 @@ public class PlayerController : MonoBehaviour
         {
             Debug.Log("Animation not on");
         }
-
+        soundEffects = GameObject.Find("GameController").GetComponent<sfxManager>();
         //Update the fuel counter:
         uI.OnUpdateFuelText(fuel);
         Debug.Log("Completed ship startup");
@@ -144,6 +148,7 @@ public class PlayerController : MonoBehaviour
             boom.transform.localScale = new Vector3(4,4,4);
             boom.transform.position = transform.position;
             levelController.EnteredBlackHole();
+            soundEffects.PlayExplosion2();
             GameObject.Destroy(this.gameObject);
         }
         else if(other.gameObject.tag == "Missile")
@@ -162,6 +167,7 @@ public class PlayerController : MonoBehaviour
                 GameObject.Destroy(other.gameObject);
                 shieldOn = false;
                 shieldObject.SetActive(false);
+                soundEffects.PlayExplosion2();
             }
             else
             {
@@ -172,18 +178,23 @@ public class PlayerController : MonoBehaviour
                 levelController.DestroyedByMissile();
                 GameObject.Destroy(other.gameObject);
                 GameObject.Destroy(this.gameObject);
+                soundEffects.PlayExplosion1();
             }
         }
         else if(other.gameObject.tag == "Shield")
         {
+            soundEffects.PlayShieldSound();
             GameObject.Destroy(other.gameObject);
             shieldOn = true;
             shieldObject.SetActive(true);
+            
         }
         else if(other.gameObject.tag == "Fuel")
         {
+            soundEffects.PlayFuelSound();
             GameObject.Destroy(other.gameObject);
-            fuel += 75;
+            fuel += 50;
+            uI.UpdateFuelGauge();
         }
     }
 

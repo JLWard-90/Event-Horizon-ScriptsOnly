@@ -40,8 +40,17 @@ public class UIController : MonoBehaviour
         int fuelint = (int)fuel;
         playerSpeed = (playerTransform.position.x-initPlayerPosition - playerPosition) / Time.deltaTime;
         playerPosition = (playerTransform.position.x-initPlayerPosition);
-        string fuelstring = string.Format("Fuel: {0}       Distance: {1}       Speed: {2}",fuelint,(int)playerPosition,(int)playerSpeed);
+        //New string for fuelText now that the fuel gauge is being used instead:
+        string fuelstring = string.Format("Distance: {0}       Speed: {1}", (int)playerPosition, (int)playerSpeed);
+        //Below is the old string
+        //string fuelstring = string.Format("Fuel: {0}       Distance: {1}       Speed: {2}",fuelint,(int)playerPosition,(int)playerSpeed);
         fuelText.text = fuelstring;
+        //Now decide if the fuel gauge needs to be updated
+        if (fuelint % fuelPerGaugeMarker == 0) //If the modulo of fuelint is zero then we need to update the fuel gauge
+        {
+            //Debug.Log("updating fuel gauge");
+            UpdateFuelGauge();
+        }
     }
 
     public void UpdateCoinText()
@@ -56,11 +65,13 @@ public class UIController : MonoBehaviour
         int nMarkers = (int) (playerFuel / fuelPerGaugeMarker);
         for (int i=0; i<nMarkers; i++)
         {
-            fuelGauge[i].SetActive(true);
+            //fuelGauge[i].SetActive(true);
+            fuelGauge[i].GetComponent<Image>().enabled = true;
         }
         for (int i=nMarkers; i<fuelGauge.Length; i++)
         {
-            fuelGauge[i].SetActive(false);
+            //fuelGauge[i].SetActive(false);
+            fuelGauge[i].GetComponent<Image>().enabled = false;
         }
     }
 }
