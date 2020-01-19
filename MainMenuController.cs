@@ -40,4 +40,10 @@ public class MainMenuController : MonoBehaviour
         int playerCoins = PlayerPrefs.GetInt("coins");
         coinText.text = string.Format("Coins: ${0}", playerCoins);
     }
+
+    public void ResetPlayerPrefs()
+    {
+        PlayerPrefs.DeleteAll();
+        gameController.LoadLevel("MainMenu");
+    }
 }

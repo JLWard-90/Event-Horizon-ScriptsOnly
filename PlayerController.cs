@@ -135,7 +135,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D other) 
+    public void ShipTrigger2DColliderEnter(Collider2D other) 
     {
         if(other.gameObject.tag == "Goal")
         {
